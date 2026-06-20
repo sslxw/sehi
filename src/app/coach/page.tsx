@@ -3,9 +3,13 @@ import { ChatInterface } from "@/components/ChatInterface";
 
 export default function CoachPage() {
   return (
-    <main className="pb-28 lg:pb-0 flex flex-col lg:h-[calc(100vh-2rem)]">
-      <Header title="Sehi Coach" subtitle="AI guidance powered by your data, journal, and energy curve" />
+    <div className="flex flex-col flex-1 min-h-0 h-full">
+      <Header
+        title="Sehi Coach"
+        subtitle="AI guidance powered by your data, journal, and energy curve"
+        compact
+      />
       <ChatInterface />
-    </main>
+    </div>
   );
 }
