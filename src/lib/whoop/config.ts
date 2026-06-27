@@ -1,6 +1,7 @@
 export const WHOOP_AUTH_URL = "https://api.prod.whoop.com/oauth/oauth2/auth";
 export const WHOOP_TOKEN_URL = "https://api.prod.whoop.com/oauth/oauth2/token";
-export const WHOOP_API_BASE = "https://api.prod.whoop.com";
+/** Data endpoints live under /developer/v2/ — OAuth stays at /oauth/ */
+export const WHOOP_API_BASE = "https://api.prod.whoop.com/developer";
 export const WHOOP_CALLBACK_PATH = "/callback";
 
 export const WHOOP_SCOPES = [

@@ -211,14 +211,21 @@ export async function fetchWhoopDailyMetrics(
 
   const params = { start: startIso };
 
-  const [recoveries, cycles, sleeps] = await Promise.all([
+  const [recoveryResult, cycleResult, sleepResult] = await Promise.allSettled([
     fetchAllPages<WhoopRecoveryRecord>("/v2/recovery", accessToken, params),
     fetchAllPages<WhoopCycleRecord>("/v2/cycle", accessToken, params),
     fetchAllPages<WhoopSleepRecord>("/v2/activity/sleep", accessToken, params),
   ]);
 
-  const merged = mergeWhoopMetrics(recoveries, cycles, sleeps);
-  return merged;
+  if (recoveryResult.status === "rejected") throw recoveryResult.reason;
+
+  const recoveries = recoveryResult.value;
+  const cycles =
+    cycleResult.status === "fulfilled" ? cycleResult.value : [];
+  const sleeps =
+    sleepResult.status === "fulfilled" ? sleepResult.value : [];
+
+  return mergeWhoopMetrics(recoveries, cycles, sleeps);
 }
 
 export async function fetchWhoopProfile(accessToken: string): Promise<WhoopProfile | null> {
