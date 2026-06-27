@@ -3,6 +3,8 @@
 import { motion } from "framer-motion";
 import { getSehiScoreColor } from "@/lib/sehi-score";
 import type { SehiScoreBreakdown } from "@/lib/sehi-score";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { getSehiLabelKey } from "@/lib/i18n";
 
 interface SehiScoreRingProps {
   breakdown: SehiScoreBreakdown;
@@ -10,7 +12,9 @@ interface SehiScoreRingProps {
 }
 
 export function SehiScoreRing({ breakdown, size = 220 }: SehiScoreRingProps) {
-  const { score, label } = breakdown;
+  const { t } = useLocale();
+  const { score } = breakdown;
+  const label = t(getSehiLabelKey(score));
   const strokeWidth = 12;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -46,7 +50,7 @@ export function SehiScoreRing({ breakdown, size = 220 }: SehiScoreRingProps) {
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 mb-1">
-          Sehi Score
+          {t("metrics.sehiScore")}
         </span>
         <motion.span
           className="text-5xl font-semibold tracking-tight"
@@ -66,24 +70,25 @@ export function SehiScoreRing({ breakdown, size = 220 }: SehiScoreRingProps) {
 }
 
 export function SehiScoreBreakdown({ breakdown }: { breakdown: SehiScoreBreakdown }) {
+  const { t } = useLocale();
   const items = [
-    { label: "Recovery", value: breakdown.recovery, color: "#34D399" },
-    { label: "Sleep", value: breakdown.sleep, color: "#A78BFA" },
-    { label: "Load balance", value: breakdown.loadBalance, color: "#60A5FA" },
-    { label: "Lifestyle", value: breakdown.lifestyle, color: "#22D3EE" },
+    { labelKey: "metrics.recovery", value: breakdown.recovery, color: "#34D399" },
+    { labelKey: "metrics.sleep", value: breakdown.sleep, color: "#A78BFA" },
+    { labelKey: "metrics.loadBalance", value: breakdown.loadBalance, color: "#60A5FA" },
+    { labelKey: "metrics.lifestyle", value: breakdown.lifestyle, color: "#22D3EE" },
   ];
 
   return (
     <div className="grid grid-cols-2 gap-2">
       {items.map((item, i) => (
         <motion.div
-          key={item.label}
+          key={item.labelKey}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 + i * 0.05 }}
           className="glass rounded-xl p-3"
         >
-          <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{item.label}</p>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{t(item.labelKey)}</p>
           <p className="text-lg font-semibold mt-0.5" style={{ color: item.color }}>
             {item.value}%
           </p>

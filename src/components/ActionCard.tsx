@@ -10,7 +10,9 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-import type { ActionInsight } from "@/lib/whoop-data";
+import type { ActionInsight, DailyMetrics } from "@/lib/whoop-data";
+import { translateInsight } from "@/lib/i18n/insights";
+import { useLocale } from "@/components/providers/LocaleProvider";
 
 const iconMap: Record<string, LucideIcon> = {
   "heart-pulse": HeartPulse,
@@ -30,11 +32,14 @@ const priorityStyles = {
 interface ActionCardProps {
   insight: ActionInsight;
   index: number;
+  metrics?: DailyMetrics;
 }
 
-export function ActionCard({ insight, index }: ActionCardProps) {
+export function ActionCard({ insight, index, metrics }: ActionCardProps) {
+  const { t } = useLocale();
   const Icon = iconMap[insight.icon] || Activity;
   const style = priorityStyles[insight.priority];
+  const translated = translateInsight(insight, t, metrics);
 
   return (
     <motion.div
@@ -50,16 +55,12 @@ export function ActionCard({ insight, index }: ActionCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <div className={`w-1.5 h-1.5 rounded-full ${style.dot}`} />
-            <h3 className="text-sm font-semibold text-zinc-100">{insight.title}</h3>
+            <h3 className="text-sm font-semibold text-zinc-100">{translated.title}</h3>
           </div>
-          <p className="text-xs text-zinc-400 leading-relaxed mb-2">
-            {insight.description}
-          </p>
+          <p className="text-xs text-zinc-400 leading-relaxed mb-2">{translated.description}</p>
           <div className="flex items-start gap-2 bg-white/[0.03] rounded-xl px-3 py-2">
             <Zap className="w-3.5 h-3.5 text-cyan-400 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-cyan-300/90 leading-relaxed font-medium">
-              {insight.action}
-            </p>
+            <p className="text-xs text-cyan-300/90 leading-relaxed font-medium">{translated.action}</p>
           </div>
         </div>
       </div>

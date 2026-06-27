@@ -4,16 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { navItems } from "@/lib/nav";
+import { mobileNavItems } from "@/lib/nav";
+import { useLocale } from "@/components/providers/LocaleProvider";
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useLocale();
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 safe-bottom">
       <div className="mx-2 mb-2 glass rounded-2xl px-1 py-1.5">
         <div className="flex items-center justify-around">
-            {navItems.map((item) => {
+          {mobileNavItems.map((item) => {
             const isActive =
               item.href === "/enterprise"
                 ? pathname.startsWith("/enterprise")
@@ -37,7 +39,9 @@ export function BottomNav() {
                   />
                 )}
                 <Icon className="w-4 h-4 relative z-10" strokeWidth={isActive ? 2.5 : 2} />
-                <span className="text-[9px] font-medium relative z-10 truncate">{item.label}</span>
+                <span className="text-[9px] font-medium relative z-10 truncate max-w-[3rem]">
+                  {t(item.labelKey)}
+                </span>
               </Link>
             );
           })}

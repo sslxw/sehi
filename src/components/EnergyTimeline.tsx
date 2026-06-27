@@ -2,6 +2,10 @@
 
 import { motion } from "framer-motion";
 import type { EnergyPoint, TrainingWindow } from "@/lib/energy";
+import { translateEnergyTimeline, translateTrainingWindow } from "@/lib/energy-i18n";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { useWhoop } from "@/components/providers/WhoopProvider";
+import { useMemo } from "react";
 
 const zoneColors = {
   peak: "#34D399",
@@ -16,10 +20,20 @@ interface EnergyTimelineProps {
 }
 
 export function EnergyTimeline({ timeline, trainingWindow }: EnergyTimelineProps) {
+  const { t } = useLocale();
+  const { today: metrics } = useWhoop();
+  const localizedTimeline = useMemo(
+    () => translateEnergyTimeline(timeline, t),
+    [timeline, t]
+  );
+  const localizedWindow = useMemo(
+    () => translateTrainingWindow(trainingWindow, metrics, timeline, t),
+    [trainingWindow, metrics, timeline, t]
+  );
   const maxEnergy = 100;
   const height = 100;
 
-  const points = timeline.map((p, i) => {
+  const points = localizedTimeline.map((p, i) => {
     const x = (i / (timeline.length - 1)) * 100;
     const y = height - (p.energy / maxEnergy) * height;
     return { x, y, ...p };
@@ -28,18 +42,20 @@ export function EnergyTimeline({ timeline, trainingWindow }: EnergyTimelineProps
   const pathD = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
 
   const currentHour = new Date().getHours();
-  const currentPoint = timeline.find((p) => p.hour <= currentHour && currentHour < p.hour + 2);
+  const currentPoint = localizedTimeline.find(
+    (p) => p.hour <= currentHour && currentHour < p.hour + 2
+  );
 
   return (
     <div className="glass rounded-2xl p-5">
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-zinc-200">Energy Timeline</h3>
-          <p className="text-xs text-zinc-500 mt-0.5">Predicted energy through the day</p>
+          <h3 className="text-sm font-semibold text-zinc-200">{t("home.energyTimeline")}</h3>
+          <p className="text-xs text-zinc-500 mt-0.5">{t("home.energySubtitle")}</p>
         </div>
         {currentPoint && (
-          <div className="text-right">
-            <p className="text-[10px] text-zinc-500 uppercase">Now</p>
+          <div className="text-end">
+            <p className="text-[10px] text-zinc-500 uppercase">{t("common.now")}</p>
             <p className="text-sm font-semibold" style={{ color: zoneColors[currentPoint.zone] }}>
               {currentPoint.energy}%
             </p>
@@ -81,7 +97,7 @@ export function EnergyTimeline({ timeline, trainingWindow }: EnergyTimelineProps
       </svg>
 
       <div className="flex justify-between mt-2 px-1">
-        {timeline.map((p) => (
+        {localizedTimeline.map((p) => (
           <span key={p.hour} className="text-[9px] text-zinc-600">{p.label}</span>
         ))}
       </div>
@@ -91,9 +107,9 @@ export function EnergyTimeline({ timeline, trainingWindow }: EnergyTimelineProps
           <span className="text-lg">⏱</span>
         </div>
         <div>
-          <p className="text-xs text-zinc-500 uppercase tracking-wider">Best training window</p>
-          <p className="text-sm font-semibold text-emerald-300">{trainingWindow.label}</p>
-          <p className="text-xs text-zinc-500 mt-0.5">{trainingWindow.reason}</p>
+          <p className="text-xs text-zinc-500 uppercase tracking-wider">{t("home.bestTrainingWindow")}</p>
+          <p className="text-sm font-semibold text-emerald-300">{localizedWindow.label}</p>
+          <p className="text-xs text-zinc-500 mt-0.5">{localizedWindow.reason}</p>
         </div>
       </div>
     </div>

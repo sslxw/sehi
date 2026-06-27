@@ -1,7 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { cn, getScoreColor, getScoreLabel } from "@/lib/utils";
+import { cn, getScoreColor } from "@/lib/utils";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { getScoreLabelKey } from "@/lib/i18n";
 
 interface MetricCardProps {
   label: string;
@@ -24,8 +26,10 @@ export function MetricCard({
   trendValue,
   delay = 0,
 }: MetricCardProps) {
+  const { t } = useLocale();
   const color = score !== undefined ? getScoreColor(score, type) : undefined;
-  const statusLabel = score !== undefined ? getScoreLabel(score, type) : undefined;
+  const statusLabel =
+    score !== undefined ? t(getScoreLabelKey(score, type)) : undefined;
 
   return (
     <motion.div

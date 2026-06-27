@@ -20,8 +20,9 @@
 # production
 /build
 
-# misc
-.DS_Store
+# misc data (WHOOP tokens)
+.data/
+
 *.pem
 
 # debug

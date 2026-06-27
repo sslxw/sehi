@@ -1,12 +1,15 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { AlertTriangle, ChevronRight } from "lucide-react";
 import type { Employee, WorkCapacity } from "@/lib/enterprise";
 import { scheduleTypeColors } from "@/lib/enterprise";
+import { translateCapacity } from "@/lib/enterprise-i18n";
 import { WorkCapacityBadge, WorkHoursBar } from "./WorkCapacityBadge";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/components/providers/LocaleProvider";
 
 interface EmployeeRowProps {
   employee: Employee;
@@ -15,7 +18,9 @@ interface EmployeeRowProps {
 }
 
 export function EmployeeRow({ employee, capacity, index }: EmployeeRowProps) {
-  const color = scheduleTypeColors[capacity.scheduleType];
+  const { t } = useLocale();
+  const localized = useMemo(() => translateCapacity(capacity, t), [capacity, t]);
+  const color = scheduleTypeColors[localized.scheduleType];
 
   return (
     <motion.div
@@ -52,16 +57,18 @@ export function EmployeeRow({ employee, capacity, index }: EmployeeRowProps) {
               {employee.role} · {employee.team}
             </p>
             <WorkHoursBar
-              recommended={capacity.recommendedHours}
-              baseline={capacity.baselineHours}
+              recommended={localized.recommendedHours}
+              baseline={localized.baselineHours}
               color={color}
             />
           </div>
 
           <div className="flex flex-col items-end gap-2 shrink-0">
-            <WorkCapacityBadge capacity={capacity} size="sm" />
-            <span className="text-[10px] text-zinc-500">Sehi {capacity.sehiScore}</span>
-            <ChevronRight className="w-4 h-4 text-zinc-600" />
+            <WorkCapacityBadge capacity={localized} size="sm" />
+            <span className="text-[10px] text-zinc-500">
+              {t("metrics.sehiScore")} {localized.sehiScore}
+            </span>
+            <ChevronRight className="w-4 h-4 text-zinc-600 rtl-flip" />
           </div>
         </div>
       </Link>
@@ -103,6 +110,7 @@ export function TeamFilter({
   active: string | null;
   onChange: (team: string | null) => void;
 }) {
+  const { t } = useLocale();
   return (
     <div className="flex gap-2 flex-wrap">
       <button
@@ -115,7 +123,7 @@ export function TeamFilter({
             : "border-white/[0.06] text-zinc-500 hover:text-zinc-300"
         )}
       >
-        All teams
+        {t("common.allTeams")}
       </button>
       {teams.map((team) => (
         <button

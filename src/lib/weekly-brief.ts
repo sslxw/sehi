@@ -1,4 +1,6 @@
-import { dailyMetrics } from "./whoop-data";
+import type { DailyMetrics } from "./whoop-data";
+import { mockDailyMetrics } from "./whoop-data";
+import type { TranslateParams } from "./i18n";
 
 export interface WeeklyBrief {
   weekLabel: string;
@@ -12,8 +14,13 @@ export interface WeeklyBrief {
   sleepAvg: number;
 }
 
-export function getWeeklyBrief(): WeeklyBrief {
-  const last7 = dailyMetrics.slice(-7);
+type Translator = (key: string, params?: TranslateParams) => string;
+
+export function getWeeklyBrief(
+  t: Translator,
+  metricsHistory: DailyMetrics[] = mockDailyMetrics
+): WeeklyBrief {
+  const last7 = metricsHistory.slice(-7);
   const recoveryAvg = Math.round(
     last7.reduce((s, d) => s + d.recovery, 0) / 7
   );
@@ -26,37 +33,51 @@ export function getWeeklyBrief(): WeeklyBrief {
   const wins: string[] = [];
   const risks: string[] = [];
 
-  if (recoveryAvg >= 60) wins.push(`Recovery averaged ${recoveryAvg}% — solid recovery week`);
-  else risks.push(`Recovery averaged ${recoveryAvg}% — below optimal`);
+  if (recoveryAvg >= 60) {
+    wins.push(t("weeklyBrief.recoveryWin", { avg: recoveryAvg }));
+  } else {
+    risks.push(t("weeklyBrief.recoveryRisk", { avg: recoveryAvg }));
+  }
 
-  if (sleepAvg >= 7.5) wins.push(`${sleepAvg}h average sleep — great consistency`);
-  else risks.push(`Only ${sleepAvg}h sleep average — prioritize earlier bedtimes`);
+  if (sleepAvg >= 7.5) {
+    wins.push(t("weeklyBrief.sleepWin", { avg: sleepAvg }));
+  } else {
+    risks.push(t("weeklyBrief.sleepRisk", { avg: sleepAvg }));
+  }
 
   const highStrainDays = last7.filter((d) => d.strain > 14).length;
-  if (highStrainDays >= 3) risks.push(`${highStrainDays} high-strain days — watch for burnout`);
-  else if (highStrainDays >= 1) wins.push("Good strain distribution across the week");
+  if (highStrainDays >= 3) {
+    risks.push(t("weeklyBrief.highStrainRisk", { days: highStrainDays }));
+  } else if (highStrainDays >= 1) {
+    wins.push(t("weeklyBrief.strainDistributionWin"));
+  }
 
-  if (strainActual > strainTarget + 5) risks.push("Weekly strain above target — schedule a rest day");
-  else if (strainActual >= strainTarget - 5) wins.push("Weekly strain on target");
+  if (strainActual > strainTarget + 5) {
+    risks.push(t("weeklyBrief.strainAboveTarget"));
+  } else if (strainActual >= strainTarget - 5) {
+    wins.push(t("weeklyBrief.strainOnTarget"));
+  }
 
   const bestDay = last7.reduce((a, b) => (a.recovery > b.recovery ? a : b));
-  wins.push(`Best recovery: ${bestDay.recovery}% (${bestDay.date})`);
+  wins.push(
+    t("weeklyBrief.bestRecovery", { pct: bestDay.recovery, date: bestDay.date })
+  );
 
   let focus: string;
-  if (recoveryAvg < 55) focus = "Recovery first — 2 rest days and 8h sleep minimum";
-  else if (sleepAvg < 7) focus = "Sleep is your lever — wind-down routine and no screens after 9pm";
-  else if (strainActual < strainTarget - 10) focus = "You have room to push — add one high-strain session";
-  else focus = "Maintain balance — keep logging journal to refine your Sehi Score";
+  if (recoveryAvg < 55) focus = t("weeklyBrief.focusRecovery");
+  else if (sleepAvg < 7) focus = t("weeklyBrief.focusSleep");
+  else if (strainActual < strainTarget - 10) focus = t("weeklyBrief.focusPush");
+  else focus = t("weeklyBrief.focusBalance");
 
   const headline =
     recoveryAvg >= 65 && sleepAvg >= 7.5
-      ? "Strong week — you're building momentum"
+      ? t("weeklyBrief.headlineStrong")
       : recoveryAvg >= 50
-        ? "Steady week — small tweaks will compound"
-        : "Recovery week needed — protect your baseline";
+        ? t("weeklyBrief.headlineSteady")
+        : t("weeklyBrief.headlineRecovery");
 
   return {
-    weekLabel: "This week",
+    weekLabel: t("trends.thisWeek"),
     headline,
     wins,
     risks,

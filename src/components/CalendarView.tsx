@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { DayPicker } from "react-day-picker";
 import { format, isSameDay, parseISO } from "date-fns";
+import { arSA as dateFnsArSA, enUS } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Check,
@@ -15,22 +16,25 @@ import {
 } from "lucide-react";
 import type { CalendarEvent } from "@/lib/whoop-data";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import "react-day-picker/style.css";
 
 const typeConfig = {
-  workout: { icon: Dumbbell, color: "#60A5FA", label: "Workout" },
-  rest: { icon: Heart, color: "#34D399", label: "Rest" },
-  sleep: { icon: Moon, color: "#A78BFA", label: "Sleep" },
-  recovery: { icon: Zap, color: "#22D3EE", label: "Recovery" },
-  goal: { icon: Target, color: "#FBBF24", label: "Goal" },
-};
+  workout: { icon: Dumbbell, color: "#60A5FA", labelKey: "calendarEvent.workout" },
+  rest: { icon: Heart, color: "#34D399", labelKey: "calendarEvent.rest" },
+  sleep: { icon: Moon, color: "#A78BFA", labelKey: "calendarEvent.sleep" },
+  recovery: { icon: Zap, color: "#22D3EE", labelKey: "calendarEvent.recovery" },
+  goal: { icon: Target, color: "#FBBF24", labelKey: "calendarEvent.goal" },
+} as const;
 
 interface CalendarViewProps {
   events: CalendarEvent[];
 }
 
 export function CalendarView({ events }: CalendarViewProps) {
+  const { t, locale } = useLocale();
   const [selected, setSelected] = useState<Date>(new Date());
+  const dateLocale = locale === "ar-SA" ? dateFnsArSA : enUS;
 
   const eventDates = events.map((e) => parseISO(e.date));
   const dayEvents = events.filter((e) => isSameDay(parseISO(e.date), selected));
@@ -53,6 +57,7 @@ export function CalendarView({ events }: CalendarViewProps) {
           mode="single"
           selected={selected}
           onSelect={(day) => day && setSelected(day)}
+          locale={dateLocale}
           modifiers={modifiers}
           modifiersStyles={modifiersStyles}
           classNames={{
@@ -62,14 +67,17 @@ export function CalendarView({ events }: CalendarViewProps) {
             month_caption: "flex justify-center items-center h-10",
             caption_label: "text-sm font-semibold text-zinc-200",
             nav: "flex items-center gap-1",
-            button_previous: "absolute left-3 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-zinc-400",
-            button_next: "absolute right-3 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-zinc-400",
+            button_previous:
+              "absolute left-3 rtl:left-auto rtl:right-3 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-zinc-400",
+            button_next:
+              "absolute right-3 rtl:right-auto rtl:left-3 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/5 text-zinc-400",
             month_grid: "w-full border-collapse",
             weekdays: "flex",
             weekday: "flex-1 text-center text-[10px] font-medium text-zinc-500 uppercase py-2",
             week: "flex w-full",
             day: "flex-1 text-center",
-            day_button: "w-full aspect-square flex items-center justify-center text-sm rounded-xl hover:bg-white/5 transition-colors text-zinc-300",
+            day_button:
+              "w-full aspect-square flex items-center justify-center text-sm rounded-xl hover:bg-white/5 transition-colors text-zinc-300",
             selected: "!bg-emerald-500/20 !text-emerald-300 font-semibold",
             today: "text-cyan-400 font-semibold",
             outside: "text-zinc-600",
@@ -79,7 +87,7 @@ export function CalendarView({ events }: CalendarViewProps) {
 
       <div>
         <h3 className="text-sm font-semibold text-zinc-300 mb-3 px-1">
-          {format(selected, "EEEE, MMMM d")}
+          {format(selected, "EEEE, MMMM d", { locale: dateLocale })}
         </h3>
         <AnimatePresence mode="wait">
           {dayEvents.length === 0 ? (
@@ -90,8 +98,8 @@ export function CalendarView({ events }: CalendarViewProps) {
               exit={{ opacity: 0 }}
               className="glass rounded-2xl p-6 text-center"
             >
-              <p className="text-sm text-zinc-500">No events scheduled</p>
-              <p className="text-xs text-zinc-600 mt-1">Rest day or add activities in Coach</p>
+              <p className="text-sm text-zinc-500">{t("calendar.noEvents")}</p>
+              <p className="text-xs text-zinc-600 mt-1">{t("calendar.noEventsHint")}</p>
             </motion.div>
           ) : (
             <motion.div
@@ -111,10 +119,7 @@ export function CalendarView({ events }: CalendarViewProps) {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    className={cn(
-                      "glass rounded-2xl p-4",
-                      event.completed && "opacity-60"
-                    )}
+                    className={cn("glass rounded-2xl p-4", event.completed && "opacity-60")}
                   >
                     <div className="flex items-start gap-3">
                       <div
@@ -125,9 +130,7 @@ export function CalendarView({ events }: CalendarViewProps) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-semibold text-zinc-100">
-                            {event.title}
-                          </h4>
+                          <h4 className="text-sm font-semibold text-zinc-100">{event.title}</h4>
                           {event.completed ? (
                             <Check className="w-4 h-4 text-emerald-400" />
                           ) : (

@@ -5,21 +5,35 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { navItems } from "@/lib/nav";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { WhoopConnect } from "@/components/WhoopConnect";
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { t, isRtl } = useLocale();
 
   return (
-    <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-white/[0.06] bg-[#0a0a0e]/80 backdrop-blur-xl h-screen sticky top-0">
+    <aside
+      className={cn(
+        "hidden lg:flex flex-col w-64 shrink-0 bg-[#0a0a0e]/80 backdrop-blur-xl h-screen sticky top-0",
+        isRtl ? "border-s border-white/[0.06]" : "border-e border-white/[0.06]"
+      )}
+    >
       <div className="p-6 pb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/25 to-violet-500/25 border border-white/10 flex items-center justify-center">
-            <span className="text-sm font-bold gradient-text">S</span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/25 to-violet-500/25 border border-white/10 flex items-center justify-center">
+              <span className="text-sm font-bold gradient-text">S</span>
+            </div>
+            <div>
+              <p className="text-sm font-semibold tracking-tight">{t("brand.name")}</p>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{t("brand.tagline")}</p>
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-semibold tracking-tight">Sehi</p>
-            <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Health Intelligence</p>
-          </div>
+        </div>
+        <div className="mt-4">
+          <LanguageSwitcher className="w-full justify-center" />
         </div>
       </div>
 
@@ -47,25 +61,22 @@ export function Sidebar() {
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
-              <Icon className="w-4 h-4 relative z-10" strokeWidth={isActive ? 2.5 : 2} />
-              <span className="relative z-10">{item.label}</span>
+              <Icon className="w-4 h-4 relative z-10 shrink-0" strokeWidth={isActive ? 2.5 : 2} />
+              <span className="relative z-10">{t(item.labelKey)}</span>
             </Link>
           );
         })}
       </nav>
 
       <div className="p-4 border-t border-white/[0.06]">
-        <div className="glass rounded-xl p-3 mb-3">
-          <p className="text-[10px] text-zinc-500 uppercase tracking-wider">Connected</p>
-          <p className="text-xs font-medium text-emerald-400 mt-0.5">WHOOP · Synced</p>
-        </div>
+        <WhoopConnect className="mb-3" />
         <div className="flex items-center gap-3 px-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400/20 to-violet-400/20 border border-white/10 flex items-center justify-center">
             <span className="text-xs font-semibold text-cyan-300">S</span>
           </div>
           <div className="min-w-0">
             <p className="text-xs font-medium text-zinc-300 truncate">Sal</p>
-            <p className="text-[10px] text-zinc-500">Sehi member</p>
+            <p className="text-[10px] text-zinc-500">{t("brand.member")}</p>
           </div>
         </div>
       </div>

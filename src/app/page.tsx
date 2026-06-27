@@ -8,9 +8,9 @@ import { ActionCard } from "@/components/ActionCard";
 import { EnergyTimeline } from "@/components/EnergyTimeline";
 import { SleepDebtCard, StrainBudgetCard } from "@/components/SleepDebtCard";
 import {
-  dailyMetrics,
-  getTodayMetrics,
-  getYesterdayMetrics,
+  mockDailyMetrics,
+  pickTodayMetrics,
+  pickYesterdayMetrics,
   generateInsights,
 } from "@/lib/whoop-data";
 import { getTodayJournal } from "@/lib/journal";
@@ -22,10 +22,13 @@ import {
 } from "@/lib/energy";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import { useLocale } from "@/components/providers/LocaleProvider";
+import { useWhoop } from "@/components/providers/WhoopProvider";
+import { getGreetingKey, getScoreLabelKey, getSehiRecommendKey } from "@/lib/i18n";
 
 export default function HomePage() {
-  const today = getTodayMetrics();
-  const yesterday = getYesterdayMetrics();
+  const { t } = useLocale();
+  const { today, yesterday, dailyMetrics, connected, configured, connect } = useWhoop();
   const journal = getTodayJournal();
   const sehi = calculateSehiScore(today, journal);
   const timeline = generateEnergyTimeline(today, journal);
@@ -33,18 +36,28 @@ export default function HomePage() {
   const sleepDebt = calculateSleepDebt(dailyMetrics.slice(-7));
   const insights = generateInsights(today);
 
-  const greeting =
-    new Date().getHours() < 12
-      ? "Good morning"
-      : new Date().getHours() < 17
-        ? "Good afternoon"
-        : "Good evening";
+  const recoveryStatus = t(getScoreLabelKey(today.recovery, "recovery")).toLowerCase();
+  const greeting = t(getGreetingKey());
+  const recommendation = t(getSehiRecommendKey(sehi.score));
 
   return (
-    <main className="pb-28 lg:pb-0">
-      <Header title={greeting} subtitle={sehi.recommendation} />
+    <main className="pb-28 lg:pb-8">
+      <Header
+        title={greeting}
+        subtitle={t("home.recoverySubtitle", { status: recoveryStatus })}
+      />
 
       <div className="px-5 lg:px-8">
+        {configured && !connected && (
+          <button
+            type="button"
+            onClick={connect}
+            className="w-full mb-4 glass rounded-xl px-4 py-3 text-start border border-cyan-500/20 hover:border-cyan-500/40 transition-colors lg:hidden"
+          >
+            <p className="text-xs font-medium text-cyan-300">{t("whoop.connect")}</p>
+            <p className="text-[10px] text-zinc-500 mt-0.5">{t("whoop.demoData")}</p>
+          </button>
+        )}
         <div className="lg:grid lg:grid-cols-12 lg:gap-8 lg:items-start">
           <div className="lg:col-span-4 space-y-4">
             <motion.div
@@ -55,7 +68,6 @@ export default function HomePage() {
             >
               <SehiScoreRing breakdown={sehi} size={220} />
             </motion.div>
-
             <SehiScoreBreakdown breakdown={sehi} />
             <StrainBudgetCard budget={sehi.strainBudget} currentStrain={today.strain} />
             <SleepDebtCard
@@ -67,10 +79,11 @@ export default function HomePage() {
 
           <div className="lg:col-span-8 space-y-6 mt-6 lg:mt-0">
             <EnergyTimeline timeline={timeline} trainingWindow={trainingWindow} />
+            <p className="text-xs text-zinc-500 -mt-4 px-1">{recommendation}</p>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               <MetricCard
-                label="Recovery"
+                label={t("metrics.recovery")}
                 value={today.recovery}
                 unit="%"
                 type="recovery"
@@ -80,16 +93,16 @@ export default function HomePage() {
                 delay={0.1}
               />
               <MetricCard
-                label="Strain"
+                label={t("metrics.strain")}
                 value={today.strain.toFixed(1)}
                 type="strain"
                 score={Math.min(100, today.strain * 5)}
                 trend={today.strain > yesterday.strain ? "up" : "down"}
-                trendValue={`${Math.abs(today.strain - yesterday.strain).toFixed(1)} vs yesterday`}
+                trendValue={`${Math.abs(today.strain - yesterday.strain).toFixed(1)} ${t("common.vsYesterday")}`}
                 delay={0.15}
               />
               <MetricCard
-                label="Sleep"
+                label={t("metrics.sleep")}
                 value={today.sleep}
                 unit="%"
                 type="sleep"
@@ -99,7 +112,7 @@ export default function HomePage() {
                 delay={0.2}
               />
               <MetricCard
-                label="HRV"
+                label={t("metrics.hrv")}
                 value={today.hrv}
                 unit="ms"
                 type="recovery"
@@ -110,26 +123,26 @@ export default function HomePage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold text-zinc-300">Action Items</h2>
+              <div className="flex items-center justify-between mb-3 gap-2">
+                <h2 className="text-sm font-semibold text-zinc-300">{t("home.actionItems")}</h2>
                 <div className="flex items-center gap-3">
                   <Link
                     href="/journal"
                     className="text-xs text-violet-400 flex items-center gap-1 hover:text-violet-300"
                   >
-                    Log journal <ArrowRight className="w-3 h-3" />
+                    {t("common.logJournal")} <ArrowRight className="w-3 h-3 rtl-flip" />
                   </Link>
                   <Link
                     href="/coach"
                     className="text-xs text-cyan-400 flex items-center gap-1 hover:text-cyan-300"
                   >
-                    Ask Coach <ArrowRight className="w-3 h-3" />
+                    {t("common.askCoach")} <ArrowRight className="w-3 h-3 rtl-flip" />
                   </Link>
                 </div>
               </div>
               <div className="space-y-3 lg:grid lg:grid-cols-2 lg:gap-3 lg:space-y-0">
                 {insights.slice(0, 3).map((insight, i) => (
-                  <ActionCard key={insight.id} insight={insight} index={i} />
+                  <ActionCard key={insight.id} insight={insight} index={i} metrics={today} />
                 ))}
               </div>
             </div>

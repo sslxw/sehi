@@ -3,38 +3,41 @@
 import { motion } from "framer-motion";
 import { Building2, Clock, Users, AlertTriangle, TrendingDown } from "lucide-react";
 import type { EnterpriseSummary } from "@/lib/enterprise";
+import { useLocale } from "@/components/providers/LocaleProvider";
 
 export function EnterpriseStats({ summary }: { summary: EnterpriseSummary }) {
-  const capacityPct = Math.round(
-    (summary.totalCapacityHours / summary.baselineCapacityHours) * 100
-  );
+  const { t } = useLocale();
+  const baselinePerEmployee = summary.baselineCapacityHours / summary.totalActive;
 
   const stats = [
     {
-      label: "Active employees",
+      label: t("enterprise.activeEmployees"),
       value: summary.totalActive,
-      sub: `${summary.onLeave} on leave`,
+      sub: `${summary.onLeave} ${t("enterprise.onLeave")}`,
       icon: Users,
       color: "#22D3EE",
     },
     {
-      label: "Team Sehi avg",
+      label: t("enterprise.teamSehiAvg"),
       value: `${summary.avgSehiScore}`,
-      sub: "readiness score",
+      sub: t("enterprise.readinessScore"),
       icon: Building2,
       color: "#34D399",
     },
     {
-      label: "Avg work hours",
+      label: t("enterprise.avgWorkHours"),
       value: `${summary.avgRecommendedHours}h`,
-      sub: `vs ${summary.baselineCapacityHours / summary.totalActive}h baseline`,
+      sub: t("enterprise.vsBaseline", { hours: baselinePerEmployee }),
       icon: Clock,
       color: "#A78BFA",
     },
     {
-      label: "At risk",
+      label: t("enterprise.atRisk"),
       value: summary.atRisk + summary.restRecommended,
-      sub: `${summary.restRecommended} rest · ${summary.reducedLoad} reduced`,
+      sub: t("enterprise.restReduced", {
+        rest: summary.restRecommended,
+        reduced: summary.reducedLoad,
+      }),
       icon: AlertTriangle,
       color: "#FBBF24",
     },
@@ -56,7 +59,9 @@ export function EnterpriseStats({ summary }: { summary: EnterpriseSummary }) {
               <Icon className="w-4 h-4" style={{ color: stat.color }} />
               <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{stat.label}</p>
             </div>
-            <p className="text-2xl font-semibold" style={{ color: stat.color }}>{stat.value}</p>
+            <p className="text-2xl font-semibold" style={{ color: stat.color }}>
+              {stat.value}
+            </p>
             <p className="text-[10px] text-zinc-500 mt-1">{stat.sub}</p>
           </motion.div>
         );
@@ -66,6 +71,7 @@ export function EnterpriseStats({ summary }: { summary: EnterpriseSummary }) {
 }
 
 export function CapacityOverview({ summary }: { summary: EnterpriseSummary }) {
+  const { t } = useLocale();
   const capacityPct = Math.round(
     (summary.totalCapacityHours / summary.baselineCapacityHours) * 100
   );
@@ -80,16 +86,16 @@ export function CapacityOverview({ summary }: { summary: EnterpriseSummary }) {
     >
       <div className="flex items-start justify-between mb-4">
         <div>
-          <h3 className="text-sm font-semibold text-zinc-200">Today&apos;s team capacity</h3>
-          <p className="text-xs text-zinc-500 mt-0.5">
-            Recommended hours based on biometric readiness
-          </p>
+          <h3 className="text-sm font-semibold text-zinc-200">{t("enterprise.teamCapacity")}</h3>
+          <p className="text-xs text-zinc-500 mt-0.5">{t("enterprise.teamCapacityHint")}</p>
         </div>
         <div className="flex items-center gap-1 text-amber-400">
           {deficit > 0 && (
             <>
               <TrendingDown className="w-4 h-4" />
-              <span className="text-xs font-medium">−{deficit.toFixed(1)}h vs baseline</span>
+              <span className="text-xs font-medium">
+                {t("enterprise.vsBaselineDeficit", { hours: deficit.toFixed(1) })}
+              </span>
             </>
           )}
         </div>
@@ -98,7 +104,10 @@ export function CapacityOverview({ summary }: { summary: EnterpriseSummary }) {
       <div className="flex items-baseline gap-2 mb-3">
         <span className="text-3xl font-semibold text-cyan-400">{summary.totalCapacityHours}</span>
         <span className="text-sm text-zinc-500">
-          / {summary.baselineCapacityHours}h baseline ({capacityPct}%)
+          {t("enterprise.baselinePct", {
+            hours: summary.baselineCapacityHours,
+            pct: capacityPct,
+          })}
         </span>
       </div>
 
@@ -115,8 +124,12 @@ export function CapacityOverview({ summary }: { summary: EnterpriseSummary }) {
         {summary.teams.map((team) => (
           <div key={team.name} className="bg-white/[0.03] rounded-xl p-3">
             <p className="text-[10px] text-zinc-500 truncate">{team.name}</p>
-            <p className="text-sm font-semibold text-zinc-200 mt-0.5">{team.avgHours}h avg</p>
-            <p className="text-[10px] text-zinc-500">Sehi {team.avgSehi}</p>
+            <p className="text-sm font-semibold text-zinc-200 mt-0.5">
+              {t("enterprise.avgHoursLabel", { hours: team.avgHours })}
+            </p>
+            <p className="text-[10px] text-zinc-500">
+              {t("metrics.sehiScore")} {team.avgSehi}
+            </p>
           </div>
         ))}
       </div>

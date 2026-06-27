@@ -4,21 +4,21 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Building2, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLocale } from "@/components/providers/LocaleProvider";
 
 const tabs = [
-  { href: "/enterprise", label: "Overview", icon: Building2, exact: true },
-  { href: "/enterprise/team", label: "Team", icon: Users, exact: false },
+  { href: "/enterprise", labelKey: "nav.overview", icon: Building2, exact: true },
+  { href: "/enterprise/team", labelKey: "nav.team", icon: Users, exact: false },
 ];
 
 export function EnterpriseNav() {
   const pathname = usePathname();
+  const { t } = useLocale();
 
   return (
     <div className="flex gap-2 mb-6">
       {tabs.map((tab) => {
-        const isActive = tab.exact
-          ? pathname === tab.href
-          : pathname.startsWith(tab.href);
+        const isActive = tab.exact ? pathname === tab.href : pathname.startsWith(tab.href);
         const Icon = tab.icon;
 
         return (
@@ -33,7 +33,7 @@ export function EnterpriseNav() {
             )}
           >
             <Icon className="w-4 h-4" />
-            {tab.label}
+            {t(tab.labelKey)}
           </Link>
         );
       })}

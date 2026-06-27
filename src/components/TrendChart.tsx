@@ -1,24 +1,35 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { dailyMetrics } from "@/lib/whoop-data";
+import { useWhoop } from "@/components/providers/WhoopProvider";
 import { getScoreColor } from "@/lib/utils";
+import { useLocale } from "@/components/providers/LocaleProvider";
 
 interface TrendChartProps {
   metric: "recovery" | "strain" | "sleep" | "hrv";
   days?: number;
 }
 
-const metricConfig = {
-  recovery: { label: "Recovery", color: "#34D399" },
-  strain: { label: "Strain", color: "#60A5FA" },
-  sleep: { label: "Sleep", color: "#A78BFA" },
-  hrv: { label: "HRV", color: "#22D3EE" },
+const metricKeys = {
+  recovery: "metrics.recovery",
+  strain: "metrics.strain",
+  sleep: "metrics.sleep",
+  hrv: "metrics.hrv",
+} as const;
+
+const metricColors = {
+  recovery: "#34D399",
+  strain: "#60A5FA",
+  sleep: "#A78BFA",
+  hrv: "#22D3EE",
 };
 
 export function TrendChart({ metric, days = 14 }: TrendChartProps) {
-  const data = dailyMetrics.slice(-days);
-  const config = metricConfig[metric];
+  const { t } = useLocale();
+  const { dailyMetrics: metrics } = useWhoop();
+  const data = metrics.slice(-days);
+  const color = metricColors[metric];
+  const label = t(metricKeys[metric]);
   const values = data.map((d) => (metric === "hrv" ? d.hrv : d[metric]));
   const max = Math.max(...values) * 1.1;
   const min = Math.min(...values) * 0.9;
@@ -53,9 +64,9 @@ export function TrendChart({ metric, days = 14 }: TrendChartProps) {
     >
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h3 className="text-sm font-semibold text-zinc-200">{config.label}</h3>
+          <h3 className="text-sm font-semibold text-zinc-200">{label}</h3>
           <div className="flex items-baseline gap-2 mt-0.5">
-            <span className="text-2xl font-semibold" style={{ color: config.color }}>
+            <span className="text-2xl font-semibold" style={{ color }}>
               {Math.round(latest)}
               {metric !== "hrv" && <span className="text-sm opacity-60">%</span>}
               {metric === "hrv" && <span className="text-sm opacity-60">ms</span>}
@@ -72,7 +83,9 @@ export function TrendChart({ metric, days = 14 }: TrendChartProps) {
           </div>
         </div>
         <div className="text-right">
-          <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{days}-day avg</p>
+          <p className="text-[10px] text-zinc-500 uppercase tracking-wider">
+            {t("trends.dayAvg", { days })}
+          </p>
           <p className="text-sm font-medium text-zinc-400">
             {avg}
             {metric !== "hrv" ? "%" : "ms"}
@@ -83,8 +96,8 @@ export function TrendChart({ metric, days = 14 }: TrendChartProps) {
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full" preserveAspectRatio="none">
         <defs>
           <linearGradient id={`grad-${metric}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={config.color} stopOpacity="0.2" />
-            <stop offset="100%" stopColor={config.color} stopOpacity="0" />
+            <stop offset="0%" stopColor={color} stopOpacity="0.2" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
           </linearGradient>
         </defs>
         <motion.path
@@ -97,7 +110,7 @@ export function TrendChart({ metric, days = 14 }: TrendChartProps) {
         <motion.path
           d={pathD}
           fill="none"
-          stroke={config.color}
+          stroke={color}
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -110,11 +123,11 @@ export function TrendChart({ metric, days = 14 }: TrendChartProps) {
             cx={points[points.length - 1].x}
             cy={points[points.length - 1].y}
             r="4"
-            fill={config.color}
+            fill={color}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 1 }}
-            style={{ filter: `drop-shadow(0 0 6px ${config.color}60)` }}
+            style={{ filter: `drop-shadow(0 0 6px ${color}60)` }}
           />
         )}
       </svg>
@@ -123,15 +136,29 @@ export function TrendChart({ metric, days = 14 }: TrendChartProps) {
 }
 
 export function WeeklySummary() {
-  const last7 = dailyMetrics.slice(-7);
+  const { t } = useLocale();
+  const { dailyMetrics: metrics } = useWhoop();
+  const last7 = metrics.slice(-7);
   const avgRecovery = Math.round(last7.reduce((s, d) => s + d.recovery, 0) / 7);
   const totalStrain = last7.reduce((s, d) => s + d.strain, 0).toFixed(1);
   const avgSleep = (last7.reduce((s, d) => s + d.sleepHours, 0) / 7).toFixed(1);
 
   const stats = [
-    { label: "Avg Recovery", value: `${avgRecovery}%`, color: getScoreColor(avgRecovery, "recovery") },
-    { label: "Weekly Strain", value: totalStrain, color: "#60A5FA" },
-    { label: "Avg Sleep", value: `${avgSleep}h`, color: "#A78BFA" },
+    {
+      label: t("metrics.avgRecovery"),
+      value: `${avgRecovery}%`,
+      color: getScoreColor(avgRecovery, "recovery"),
+    },
+    {
+      label: t("metrics.weeklyStrain"),
+      value: totalStrain,
+      color: "#60A5FA",
+    },
+    {
+      label: t("metrics.avgSleep"),
+      value: `${avgSleep}h`,
+      color: "#A78BFA",
+    },
   ];
 
   return (

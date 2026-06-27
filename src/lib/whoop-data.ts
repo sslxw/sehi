@@ -68,14 +68,28 @@ function generateMetrics(): DailyMetrics[] {
   return metrics;
 }
 
-export const dailyMetrics = generateMetrics();
+export const mockDailyMetrics = generateMetrics();
 
-export function getTodayMetrics(): DailyMetrics {
-  return dailyMetrics[dailyMetrics.length - 1];
+/** @deprecated use useWhoop() or getServerWhoopMetrics */
+export const dailyMetrics = mockDailyMetrics;
+
+export function pickTodayMetrics(metrics: DailyMetrics[]): DailyMetrics {
+  if (metrics.length === 0) return mockDailyMetrics[mockDailyMetrics.length - 1];
+  return metrics[metrics.length - 1];
 }
 
-export function getYesterdayMetrics(): DailyMetrics {
-  return dailyMetrics[dailyMetrics.length - 2];
+export function pickYesterdayMetrics(metrics: DailyMetrics[]): DailyMetrics {
+  if (metrics.length >= 2) return metrics[metrics.length - 2];
+  if (metrics.length === 1) return metrics[0];
+  return mockDailyMetrics[mockDailyMetrics.length - 2];
+}
+
+export function getTodayMetrics(metrics = mockDailyMetrics): DailyMetrics {
+  return pickTodayMetrics(metrics);
+}
+
+export function getYesterdayMetrics(metrics = mockDailyMetrics): DailyMetrics {
+  return pickYesterdayMetrics(metrics);
 }
 
 export const calendarEvents: CalendarEvent[] = [
@@ -241,7 +255,7 @@ export function getCoachResponse(message: string, metrics: DailyMetrics): string
   const sehi = calculateSehiScore(metrics, journal);
   const timeline = generateEnergyTimeline(metrics, journal);
   const window = getTrainingWindow(metrics, timeline);
-  const sleepDebt = calculateSleepDebt(dailyMetrics.slice(-7));
+  const sleepDebt = calculateSleepDebt(mockDailyMetrics.slice(-7));
 
   if (lower.includes("sehi")) {
     return `Your **Sehi Score is ${sehi.score}** (${sehi.label}) — this blends recovery, sleep, load balance, and lifestyle from your journal.\n\n• Recovery: ${sehi.recovery}%\n• Sleep: ${sehi.sleep}%\n• Load balance: ${sehi.loadBalance}%\n• Lifestyle: ${sehi.lifestyle}%\n\n**Strain budget today:** ${sehi.strainBudget.toFixed(1)}\n\n${sehi.recommendation}`;
