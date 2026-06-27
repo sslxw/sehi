@@ -21,6 +21,8 @@ interface WhoopContextValue {
   configured: boolean;
   loading: boolean;
   source: "whoop" | "mock";
+  usingMock: boolean;
+  error: string | null;
   profile: WhoopProfile | null;
   dailyMetrics: DailyMetrics[];
   today: DailyMetrics;
@@ -37,6 +39,8 @@ export function WhoopProvider({ children }: { children: React.ReactNode }) {
   const [configured, setConfigured] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<WhoopProfile | null>(null);
+  const [usingMock, setUsingMock] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [dailyMetrics, setDailyMetrics] = useState<DailyMetrics[]>(mockDailyMetrics);
 
   const refresh = useCallback(async () => {
@@ -58,8 +62,12 @@ export function WhoopProvider({ children }: { children: React.ReactNode }) {
           connected: boolean;
           metrics: DailyMetrics[];
           profile: WhoopProfile | null;
+          usingMock?: boolean;
+          error?: string;
         };
         setConnected(data.connected);
+        setUsingMock(data.usingMock ?? !data.connected);
+        setError(data.error ?? null);
         setDailyMetrics(data.metrics.length > 0 ? data.metrics : mockDailyMetrics);
         setProfile(data.profile);
       }
@@ -91,6 +99,8 @@ export function WhoopProvider({ children }: { children: React.ReactNode }) {
     await fetch("/api/whoop/disconnect", { method: "POST" });
     setConnected(false);
     setProfile(null);
+    setUsingMock(true);
+    setError(null);
     setDailyMetrics(mockDailyMetrics);
   }, []);
 
@@ -102,7 +112,9 @@ export function WhoopProvider({ children }: { children: React.ReactNode }) {
       connected,
       configured,
       loading,
-      source: connected ? ("whoop" as const) : ("mock" as const),
+      source: connected && !usingMock ? ("whoop" as const) : ("mock" as const),
+      usingMock,
+      error,
       profile,
       dailyMetrics,
       today,
@@ -111,7 +123,7 @@ export function WhoopProvider({ children }: { children: React.ReactNode }) {
       connect,
       disconnect,
     }),
-    [connected, configured, loading, profile, dailyMetrics, today, yesterday, refresh, connect, disconnect]
+    [connected, configured, loading, usingMock, error, profile, dailyMetrics, today, yesterday, refresh, connect, disconnect]
   );
 
   return <WhoopContext.Provider value={value}>{children}</WhoopContext.Provider>;

@@ -180,7 +180,7 @@ export function mergeWhoopMetrics(
 
     const cycle = cycleMap.get(recovery.cycle_id);
     const sleep = sleepMap.get(recovery.cycle_id);
-    const date = cycleDateKey(cycle);
+    const date = cycle ? cycleDateKey(cycle) : recovery.created_at.split("T")[0];
 
     const strain = cycle?.score?.strain ?? 0;
     const kilojoule = cycle?.score?.kilojoule ?? 0;
@@ -218,7 +218,7 @@ export async function fetchWhoopDailyMetrics(
   ]);
 
   const merged = mergeWhoopMetrics(recoveries, cycles, sleeps);
-  return merged.length > 0 ? merged : mockDailyMetrics;
+  return merged;
 }
 
 export async function fetchWhoopProfile(accessToken: string): Promise<WhoopProfile | null> {
@@ -245,10 +245,12 @@ export async function getServerWhoopMetrics(): Promise<{
   connected: boolean;
   metrics: DailyMetrics[];
   profile: WhoopProfile | null;
+  usingMock: boolean;
+  error?: string;
 }> {
   const accessToken = await getValidAccessToken();
   if (!accessToken) {
-    return { connected: false, metrics: mockDailyMetrics, profile: null };
+    return { connected: false, metrics: mockDailyMetrics, profile: null, usingMock: true };
   }
 
   try {
@@ -256,11 +258,29 @@ export async function getServerWhoopMetrics(): Promise<{
       fetchWhoopDailyMetrics(accessToken),
       fetchWhoopProfile(accessToken),
     ]);
-    return { connected: true, metrics, profile };
+
+    if (metrics.length === 0) {
+      return {
+        connected: true,
+        metrics: mockDailyMetrics,
+        profile,
+        usingMock: true,
+        error: "WHOOP connected but no scored data returned yet",
+      };
+    }
+
+    return { connected: true, metrics, profile, usingMock: false };
   } catch (err) {
     if (err instanceof Error && err.message === "WHOOP_UNAUTHORIZED") {
       await clearWhoopTokens();
+      return { connected: false, metrics: mockDailyMetrics, profile: null, usingMock: true };
     }
-    return { connected: false, metrics: mockDailyMetrics, profile: null };
+    return {
+      connected: true,
+      metrics: mockDailyMetrics,
+      profile: null,
+      usingMock: true,
+      error: err instanceof Error ? err.message : "Failed to fetch WHOOP data",
+    };
   }
 }

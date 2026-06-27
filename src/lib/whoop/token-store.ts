@@ -1,33 +1,41 @@
-import { promises as fs } from "fs";
-import path from "path";
+import { cookies } from "next/headers";
 import type { WhoopTokens } from "./types";
 
-const TOKEN_PATH = path.join(process.cwd(), ".data", "whoop-tokens.json");
+const COOKIE_NAME = "sehi_whoop_tokens";
 
-async function ensureDir() {
-  await fs.mkdir(path.dirname(TOKEN_PATH), { recursive: true });
+function encodeTokens(tokens: WhoopTokens): string {
+  return Buffer.from(JSON.stringify(tokens)).toString("base64url");
 }
 
-export async function loadWhoopTokens(): Promise<WhoopTokens | null> {
+function decodeTokens(raw: string): WhoopTokens | null {
   try {
-    const raw = await fs.readFile(TOKEN_PATH, "utf8");
-    return JSON.parse(raw) as WhoopTokens;
+    return JSON.parse(Buffer.from(raw, "base64url").toString("utf8")) as WhoopTokens;
   } catch {
     return null;
   }
 }
 
+export async function loadWhoopTokens(): Promise<WhoopTokens | null> {
+  const store = await cookies();
+  const raw = store.get(COOKIE_NAME)?.value;
+  if (!raw) return null;
+  return decodeTokens(raw);
+}
+
 export async function saveWhoopTokens(tokens: WhoopTokens): Promise<void> {
-  await ensureDir();
-  await fs.writeFile(TOKEN_PATH, JSON.stringify(tokens, null, 2), "utf8");
+  const store = await cookies();
+  store.set(COOKIE_NAME, encodeTokens(tokens), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 90,
+  });
 }
 
 export async function clearWhoopTokens(): Promise<void> {
-  try {
-    await fs.unlink(TOKEN_PATH);
-  } catch {
-    // ignore
-  }
+  const store = await cookies();
+  store.delete(COOKIE_NAME);
 }
 
 export function isWhoopConnected(tokens: WhoopTokens | null): tokens is WhoopTokens {

@@ -374,6 +374,8 @@ const arSA: TranslationDict = {
     title: "WHOOP",
     connect: "ربط WHOOP",
     connected: "بيانات مباشرة",
+    connectedLive: "بيانات WHOOP مباشرة",
+    connectedPending: "متصل — جاري تحميل البيانات",
     disconnect: "فصل",
     sync: "تحديث",
     demoData: "بيانات تجريبية — اربط WHOOP للبيانات الحية",

@@ -373,6 +373,8 @@ const en: TranslationDict = {
     title: "WHOOP",
     connect: "Connect WHOOP",
     connected: "Live data synced",
+    connectedLive: "Live WHOOP data",
+    connectedPending: "Connected — loading live data",
     disconnect: "Disconnect",
     sync: "Refresh",
     demoData: "Using demo data — connect for live metrics",

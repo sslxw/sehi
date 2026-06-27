@@ -62,7 +62,7 @@ Copy `.env.example` to `.env` for local development.
 4. Set `WHOOP_REDIRECT_URI` and `NEXT_PUBLIC_APP_URL` in `.env` to the same base URL + `/callback`
 5. Click **Connect WHOOP** in the sidebar and sign in
 
-Live metrics replace demo data across Today, Trends, and Coach. Tokens are stored in `.data/whoop-tokens.json` (local dev).
+Live metrics replace demo data across Today, Trends, and Coach. OAuth tokens are stored in an **httpOnly cookie** (works on Vercel). After deploying, disconnect and reconnect WHOOP once.
 
 ## Tech stack
 

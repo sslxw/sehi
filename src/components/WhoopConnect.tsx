@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 
 export function WhoopConnect({ className }: { className?: string }) {
   const { t } = useLocale();
-  const { connected, configured, loading, profile, connect, disconnect, refresh } = useWhoop();
+  const { connected, configured, loading, profile, usingMock, error, connect, disconnect, refresh } =
+    useWhoop();
 
   if (!configured) {
     return (
@@ -27,11 +28,16 @@ export function WhoopConnect({ className }: { className?: string }) {
 
       {connected ? (
         <>
-          <p className="text-xs font-medium text-emerald-400">{t("whoop.connected")}</p>
+          <p className="text-xs font-medium text-emerald-400">
+            {usingMock ? t("whoop.connectedPending") : t("whoop.connectedLive")}
+          </p>
           {profile && (
             <p className="text-[10px] text-zinc-500 mt-0.5 truncate">
               {profile.first_name} {profile.last_name}
             </p>
+          )}
+          {error && (
+            <p className="text-[10px] text-amber-400/80 mt-1 leading-relaxed">{error}</p>
           )}
           <div className="flex gap-2 mt-2">
             <button
