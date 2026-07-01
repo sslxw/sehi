@@ -6,31 +6,39 @@ import { FoodScanner } from "@/components/food/FoodScanner";
 import { FoodLogList } from "@/components/food/FoodLogList";
 import type { FoodEntry } from "@/lib/food";
 import {
-  loadFoodLog,
-  saveFoodLog,
-  loadTargets,
+  loadFoodLogAsync,
+  saveFoodLogAsync,
+  loadTargetsAsync,
   getTodayEntries,
   sumMacros,
+  DEFAULT_TARGETS,
+  type MacroTargets,
 } from "@/lib/food";
 import { useCallback, useEffect, useState } from "react";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 export default function FoodPage() {
   const { t } = useLocale();
+  const { user } = useAuth();
   const [entries, setEntries] = useState<FoodEntry[]>([]);
-  const [targets] = useState(loadTargets);
+  const [targets, setTargets] = useState<MacroTargets | null>(null);
 
   useEffect(() => {
-    setEntries(loadFoodLog());
-  }, []);
+    loadFoodLogAsync(user?.userId).then(setEntries);
+    loadTargetsAsync(user?.userId).then(setTargets);
+  }, [user?.userId]);
 
   const todayEntries = getTodayEntries(entries);
   const totals = sumMacros(todayEntries);
 
-  const persist = useCallback((next: FoodEntry[]) => {
-    setEntries(next);
-    saveFoodLog(next);
-  }, []);
+  const persist = useCallback(
+    (next: FoodEntry[]) => {
+      setEntries(next);
+      saveFoodLogAsync(next, user?.userId);
+    },
+    [user?.userId]
+  );
 
   const handleSave = (entry: Omit<FoodEntry, "id" | "loggedAt">) => {
     persist([
@@ -47,7 +55,7 @@ export default function FoodPage() {
     <main className="pb-28 lg:pb-8 overflow-y-auto">
       <Header title={t("food.title")} subtitle={t("food.subtitle")} />
       <div className="px-5 lg:px-8 space-y-6 max-w-3xl lg:max-w-none">
-        <MacroSummary totals={totals} targets={targets} />
+        <MacroSummary totals={totals} targets={targets ?? DEFAULT_TARGETS} />
         <FoodScanner onSave={handleSave} />
         <div>
           <h2 className="text-sm font-semibold text-zinc-300 mb-3">

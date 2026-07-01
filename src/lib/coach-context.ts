@@ -1,6 +1,7 @@
 import type { DailyMetrics } from "./whoop-data";
 import { mockDailyMetrics, pickTodayMetrics } from "./whoop-data";
-import { getTodayJournal } from "./journal";
+import type { JournalEntry } from "./journal";
+import { defaultTodayJournal } from "./journal";
 import { calculateSehiScore } from "./sehi-score";
 import { generateEnergyTimeline, getTrainingWindow, calculateSleepDebt } from "./energy";
 import { translateTrainingWindow } from "./energy-i18n";
@@ -9,23 +10,27 @@ import type { Locale } from "./i18n/types";
 
 export interface CoachPromptOptions {
   bloodTestContext?: string | null;
+  profileContext?: string | null;
   metrics?: DailyMetrics;
   dailyMetrics?: DailyMetrics[];
   whoopConnected?: boolean;
+  journal?: JournalEntry;
 }
 
 function buildEnglishPrompt(
   metrics: DailyMetrics,
-  journal: ReturnType<typeof getTodayJournal>,
+  journal: JournalEntry,
   sehi: ReturnType<typeof calculateSehiScore>,
   sleepDebt: ReturnType<typeof calculateSleepDebt>,
   window: ReturnType<typeof getTrainingWindow>,
   bloodTestContext?: string | null,
-  whoopConnected?: boolean
+  whoopConnected?: boolean,
+  profileContext?: string | null
 ): string {
   const bloodSection = bloodTestContext
     ? `\n- Latest blood panel:\n${bloodTestContext}`
     : "";
+  const profileSection = profileContext ? `\n- Onboarding profile:\n${profileContext}` : "";
   const dataSource = whoopConnected
     ? "Live WHOOP API data"
     : "Demo data (WHOOP not connected)";
@@ -43,7 +48,7 @@ Today's user data:
 - Strain budget remaining: ${sehi.strainBudget.toFixed(1)}
 - Sleep debt (7d): ${sleepDebt.debtHours.toFixed(1)} hours
 - Best training window: ${window.label}
-- Journal today: alcohol=${journal.alcohol}, lateMeal=${journal.lateMeal}, highStress=${journal.highStress}, hydration=${journal.hydration} glasses${bloodSection}
+- Journal today: alcohol=${journal.alcohol}, lateMeal=${journal.lateMeal}, highStress=${journal.highStress}, hydration=${journal.hydration} glasses${bloodSection}${profileSection}
 
 Guidelines:
 - Be concise, warm, and actionable. Use markdown **bold** for key numbers.
@@ -56,16 +61,18 @@ Guidelines:
 
 function buildArabicPrompt(
   metrics: DailyMetrics,
-  journal: ReturnType<typeof getTodayJournal>,
+  journal: JournalEntry,
   sehi: ReturnType<typeof calculateSehiScore>,
   sleepDebt: ReturnType<typeof calculateSleepDebt>,
   window: ReturnType<typeof getTrainingWindow>,
   bloodTestContext?: string | null,
-  whoopConnected?: boolean
+  whoopConnected?: boolean,
+  profileContext?: string | null
 ): string {
   const bloodSection = bloodTestContext
     ? `\n- آخر تحليل دم:\n${bloodTestContext}`
     : "";
+  const profileSection = profileContext ? `\n- ملف المستخدم:\n${profileContext}` : "";
   const dataSource = whoopConnected ? "بيانات WHOOP مباشرة" : "بيانات تجريبية (WHOOP غير متصل)";
 
   return `أنت مدرب صحي — خبير صحة وأداء داخل تطبيق صحي. تساعد المستخدمين على فهم بيانات WHOOP واتخاذ قرارات يومية عملية.
@@ -83,7 +90,7 @@ function buildArabicPrompt(
 - ميزانية المجهود المتبقية: ${sehi.strainBudget.toFixed(1)}
 - دين النوم (7 أيام): ${sleepDebt.debtHours.toFixed(1)} ساعة
 - أفضل وقت للتمرين: ${window.label}
-- اليومية: كحول=${journal.alcohol}، أكل متأخر=${journal.lateMeal}، ضغط=${journal.highStress}، ماء=${journal.hydration} أكواب${bloodSection}
+- اليومية: كحول=${journal.alcohol}، أكل متأخر=${journal.lateMeal}، ضغط=${journal.highStress}، ماء=${journal.hydration} أكواب${bloodSection}${profileSection}
 
 إرشادات:
 - كن مختصراً، ودوداً، وعملياً. استخدم **bold** للأرقام المهمة.
@@ -100,7 +107,7 @@ export function buildCoachSystemPrompt(
 ): string {
   const history = options.dailyMetrics ?? mockDailyMetrics;
   const metrics = options.metrics ?? pickTodayMetrics(history);
-  const journal = getTodayJournal();
+  const journal = options.journal ?? defaultTodayJournal;
   const sehi = calculateSehiScore(metrics, journal);
   const sleepDebt = calculateSleepDebt(history.slice(-7));
   const timeline = generateEnergyTimeline(metrics, journal);
@@ -117,7 +124,8 @@ export function buildCoachSystemPrompt(
       sleepDebt,
       window,
       options.bloodTestContext,
-      options.whoopConnected
+      options.whoopConnected,
+      options.profileContext
     );
   }
   return buildEnglishPrompt(
@@ -127,6 +135,7 @@ export function buildCoachSystemPrompt(
     sleepDebt,
     window,
     options.bloodTestContext,
-    options.whoopConnected
+    options.whoopConnected,
+    options.profileContext
   );
 }

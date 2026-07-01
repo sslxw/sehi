@@ -1,4 +1,4 @@
-import { getTodayJournal } from "./journal";
+import { defaultTodayJournal } from "./journal";
 import { calculateSehiScore } from "./sehi-score";
 import { generateEnergyTimeline, getTrainingWindow, calculateSleepDebt } from "./energy";
 
@@ -251,7 +251,7 @@ export function generateInsights(metrics: DailyMetrics): ActionInsight[] {
 
 export function getCoachResponse(message: string, metrics: DailyMetrics): string {
   const lower = message.toLowerCase();
-  const journal = getTodayJournal();
+  const journal = defaultTodayJournal;
   const sehi = calculateSehiScore(metrics, journal);
   const timeline = generateEnergyTimeline(metrics, journal);
   const window = getTrainingWindow(metrics, timeline);

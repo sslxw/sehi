@@ -1,3 +1,5 @@
+import { loadJson, saveJson } from "@/lib/data/sync";
+
 export interface JournalFactor {
   id: string;
   label: string;
@@ -25,60 +27,59 @@ export const journalFactors: JournalFactor[] = [
   { id: "hydration", label: "Water (glasses)", icon: "droplets", type: "counter", impact: "8+ optimal" },
 ];
 
-const today = new Date().toISOString().split("T")[0];
+export function getTodayDateKey(): string {
+  return new Date().toISOString().split("T")[0];
+}
 
-export const defaultTodayJournal: JournalEntry = {
-  date: today,
-  alcohol: false,
-  lateMeal: false,
-  highStress: false,
-  caffeineLate: false,
-  mobility: true,
-  hydration: 6,
-};
-
-export const journalHistory: JournalEntry[] = [
-  { date: today, alcohol: false, lateMeal: false, highStress: false, caffeineLate: true, mobility: false, hydration: 5 },
-  {
-    date: new Date(Date.now() - 86400000).toISOString().split("T")[0],
-    alcohol: true,
-    lateMeal: true,
-    highStress: false,
-    caffeineLate: false,
-    mobility: false,
-    hydration: 4,
-  },
-  {
-    date: new Date(Date.now() - 2 * 86400000).toISOString().split("T")[0],
-    alcohol: false,
-    lateMeal: false,
-    highStress: true,
-    caffeineLate: false,
-    mobility: true,
-    hydration: 8,
-  },
-  {
-    date: new Date(Date.now() - 3 * 86400000).toISOString().split("T")[0],
+export function createDefaultJournalEntry(date = getTodayDateKey()): JournalEntry {
+  return {
+    date,
     alcohol: false,
     lateMeal: false,
     highStress: false,
     caffeineLate: false,
     mobility: true,
-    hydration: 9,
-  },
-  {
-    date: new Date(Date.now() - 4 * 86400000).toISOString().split("T")[0],
-    alcohol: false,
-    lateMeal: true,
-    highStress: false,
-    caffeineLate: true,
-    mobility: false,
     hydration: 6,
-  },
-];
+  };
+}
 
+/** Default entry when journal hasn't loaded yet (no mock history) */
+export const defaultTodayJournal = createDefaultJournalEntry();
+
+export async function loadJournalHistoryAsync(
+  userId?: string | null
+): Promise<JournalEntry[]> {
+  return loadJson<JournalEntry[]>(userId ?? null, "journal", []);
+}
+
+export async function saveJournalHistoryAsync(
+  history: JournalEntry[],
+  userId?: string | null
+): Promise<void> {
+  await saveJson(userId ?? null, "journal", history);
+}
+
+export async function getTodayJournalAsync(userId?: string | null): Promise<JournalEntry> {
+  const today = getTodayDateKey();
+  const history = await loadJournalHistoryAsync(userId);
+  return history.find((e) => e.date === today) ?? createDefaultJournalEntry(today);
+}
+
+export async function upsertJournalEntry(
+  entry: JournalEntry,
+  userId?: string | null
+): Promise<JournalEntry[]> {
+  const history = await loadJournalHistoryAsync(userId);
+  const idx = history.findIndex((e) => e.date === entry.date);
+  const next =
+    idx >= 0 ? history.map((e, i) => (i === idx ? entry : e)) : [entry, ...history];
+  await saveJournalHistoryAsync(next, userId);
+  return next;
+}
+
+/** @deprecated use getTodayJournalAsync — returns empty defaults, not mock data */
 export function getTodayJournal(): JournalEntry {
-  return journalHistory.find((e) => e.date === today) ?? defaultTodayJournal;
+  return defaultTodayJournal;
 }
 
 export interface CorrelationInsight {

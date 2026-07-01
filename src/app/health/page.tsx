@@ -6,21 +6,26 @@ import { MedicationsComingSoon } from "@/components/health/MedicationsComingSoon
 import { BloodTestUploader } from "@/components/health/BloodTestUploader";
 import { BloodTestList } from "@/components/health/BloodTestList";
 import type { BloodTestEntry } from "@/lib/blood-test";
-import { loadBloodTests, saveBloodTests } from "@/lib/blood-test";
+import { loadBloodTestsAsync, saveBloodTestsAsync } from "@/lib/blood-test";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 export default function HealthPage() {
   const { t } = useLocale();
+  const { user } = useAuth();
   const [entries, setEntries] = useState<BloodTestEntry[]>([]);
 
   useEffect(() => {
-    setEntries(loadBloodTests());
-  }, []);
+    loadBloodTestsAsync(user?.userId).then(setEntries);
+  }, [user?.userId]);
 
-  const persist = useCallback((next: BloodTestEntry[]) => {
-    setEntries(next);
-    saveBloodTests(next);
-  }, []);
+  const persist = useCallback(
+    (next: BloodTestEntry[]) => {
+      setEntries(next);
+      saveBloodTestsAsync(next, user?.userId);
+    },
+    [user?.userId]
+  );
 
   const handleSave = (entry: Omit<BloodTestEntry, "id" | "uploadedAt">) => {
     persist([

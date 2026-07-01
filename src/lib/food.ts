@@ -1,3 +1,5 @@
+import { loadJson, saveJson } from "@/lib/data/sync";
+
 export interface Macros {
   calories: number;
   protein: number;
@@ -47,28 +49,37 @@ export function getTodayDateKey(): string {
   return new Date().toISOString().split("T")[0];
 }
 
-export function loadFoodLog(): FoodEntry[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as FoodEntry[]) : [];
-  } catch {
-    return [];
-  }
+export async function loadFoodLogAsync(userId?: string | null): Promise<FoodEntry[]> {
+  return loadJson<FoodEntry[]>(userId ?? null, "food_log", []);
 }
 
-export function saveFoodLog(entries: FoodEntry[]): void {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+export async function saveFoodLogAsync(
+  entries: FoodEntry[],
+  userId?: string | null
+): Promise<void> {
+  await saveJson(userId ?? null, "food_log", entries);
+}
+
+export async function loadTargetsAsync(userId?: string | null): Promise<MacroTargets> {
+  if (userId) {
+    const { fetchProfile } = await import("@/lib/supabase/db");
+    const row = await fetchProfile(userId);
+    if (row?.macro_targets) return row.macro_targets;
+  }
+  return loadTargets();
 }
 
 export function loadTargets(): MacroTargets {
-  if (typeof window === "undefined") return DEFAULT_TARGETS;
-  try {
-    const raw = localStorage.getItem(TARGETS_KEY);
-    return raw ? (JSON.parse(raw) as MacroTargets) : DEFAULT_TARGETS;
-  } catch {
-    return DEFAULT_TARGETS;
+  return DEFAULT_TARGETS;
+}
+
+export async function saveMacroTargetsAsync(
+  targets: MacroTargets,
+  userId?: string | null
+): Promise<void> {
+  if (userId) {
+    const { upsertProfile } = await import("@/lib/supabase/db");
+    await upsertProfile(userId, { macro_targets: targets });
   }
 }
 

@@ -1,6 +1,6 @@
 import type { DailyMetrics } from "./whoop-data";
 import { mockDailyMetrics } from "./whoop-data";
-import { getTodayJournal } from "./journal";
+import { defaultTodayJournal, type JournalEntry } from "./journal";
 import { calculateSehiScore } from "./sehi-score";
 import { generateEnergyTimeline, getTrainingWindow, calculateSleepDebt } from "./energy";
 import { translateTrainingWindow } from "./energy-i18n";
@@ -19,10 +19,10 @@ export function getLocalizedCoachResponse(
   message: string,
   metrics: DailyMetrics,
   t: Translator,
-  history: DailyMetrics[] = mockDailyMetrics
+  history: DailyMetrics[] = mockDailyMetrics,
+  journal: JournalEntry = defaultTodayJournal
 ): string {
   const lower = message.toLowerCase();
-  const journal = getTodayJournal();
   const sehi = calculateSehiScore(metrics, journal);
   const timeline = generateEnergyTimeline(metrics, journal);
   const rawWindow = getTrainingWindow(metrics, timeline);

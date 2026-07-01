@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import {
   Brain,
@@ -13,7 +13,8 @@ import {
   Wine,
 } from "lucide-react";
 import type { JournalEntry } from "@/lib/journal";
-import { journalFactors, getJournalCorrelations } from "@/lib/journal";
+import { journalFactors, getJournalCorrelations, upsertJournalEntry } from "@/lib/journal";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { cn } from "@/lib/utils";
 
@@ -48,16 +49,43 @@ interface JournalCheckInProps {
 
 export function JournalCheckIn({ initialEntry }: JournalCheckInProps) {
   const { t } = useLocale();
+  const { user } = useAuth();
   const [entry, setEntry] = useState(initialEntry);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const correlations = getJournalCorrelations();
+
+  useEffect(() => {
+    setEntry(initialEntry);
+  }, [initialEntry]);
+
+  const persist = useCallback(
+    (next: JournalEntry) => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        void upsertJournalEntry(next, user?.userId);
+      }, 400);
+    },
+    [user?.userId]
+  );
+
+  const updateEntry = useCallback(
+    (updater: (prev: JournalEntry) => JournalEntry) => {
+      setEntry((prev) => {
+        const next = updater(prev);
+        persist(next);
+        return next;
+      });
+    },
+    [persist]
+  );
 
   const toggle = (key: keyof JournalEntry) => {
     if (key === "date" || key === "hydration") return;
-    setEntry((prev) => ({ ...prev, [key]: !prev[key] }));
+    updateEntry((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const adjustHydration = (delta: number) => {
-    setEntry((prev) => ({
+    updateEntry((prev) => ({
       ...prev,
       hydration: Math.max(0, Math.min(15, prev.hydration + delta)),
     }));

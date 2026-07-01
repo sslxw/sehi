@@ -49,8 +49,27 @@ No environment variables are required for the mock-data demo. For AI features, a
 | `WHOOP_CLIENT_SECRET` | WHOOP OAuth client secret (server-only) |
 | `WHOOP_REDIRECT_URI` | Must match WHOOP dashboard exactly, e.g. `https://xxx.ngrok-free.dev/callback` |
 | `NEXT_PUBLIC_APP_URL` | App base URL for OAuth redirects |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key (`sb_publishable_...`) |
 
 Copy `.env.example` to `.env` for local development.
+
+### Supabase setup
+
+1. Create a project at [supabase.com](https://supabase.com)
+2. Open **SQL Editor** and run the schema in [`supabase/schema.sql`](supabase/schema.sql)
+3. Add Supabase env vars to `.env` and Vercel:
+
+| Variable | Value |
+|----------|-------|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://YOUR_PROJECT.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Your publishable key (`sb_publishable_...`) from Supabase → Project Settings → API |
+
+Optional server-only: `SUPABASE_SECRET_KEY`, `SUPABASE_JWKS_URL`. Never prefix the secret key with `NEXT_PUBLIC_`.
+4. In **Authentication → Providers**, enable Email (disable email confirm for dev if you want instant signup)
+5. Sign up in the app — data syncs to Postgres with Row Level Security
+
+Without Supabase env vars, the app falls back to localStorage auth (dev only).
 
 ### WHOOP setup
 
@@ -67,6 +86,7 @@ Live metrics replace demo data across Today, Trends, and Coach. OAuth tokens are
 ## Tech stack
 
 - Next.js 16 (App Router)
+- Supabase (Auth + Postgres)
 - TypeScript
 - Tailwind CSS v4
 - Framer Motion

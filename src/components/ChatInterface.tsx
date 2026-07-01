@@ -4,9 +4,11 @@ import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Send, Sparkles } from "lucide-react";
 import { getLocalizedCoachResponse } from "@/lib/coach-fallback";
-import { formatBloodTestForCoach, getLatestBloodTest } from "@/lib/blood-test";
+import { formatBloodTestForCoach, getLatestBloodTestAsync } from "@/lib/blood-test";
+import { formatProfileForCoach, fetchUserProfile } from "@/lib/user-profile";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useWhoop } from "@/components/providers/WhoopProvider";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 interface Message {
   id: string;
@@ -19,6 +21,7 @@ const MOBILE_NAV_PADDING = "calc(5.25rem + env(safe-area-inset-bottom, 0px))";
 export function ChatInterface() {
   const { t, locale } = useLocale();
   const { today: metrics, dailyMetrics } = useWhoop();
+  const { user } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -76,12 +79,17 @@ export function ChatInterface() {
         .filter((m) => m.id !== "welcome")
         .map((m) => ({ role: m.role, content: m.content }));
 
-      const bloodTestContext = formatBloodTestForCoach(getLatestBloodTest());
+      const bloodTestContext = formatBloodTestForCoach(
+        await getLatestBloodTestAsync(user?.userId)
+      );
+      const profileContext = user
+        ? formatProfileForCoach(await fetchUserProfile(user.userId))
+        : null;
 
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: apiMessages, locale, bloodTestContext }),
+        body: JSON.stringify({ messages: apiMessages, locale, bloodTestContext, profileContext }),
       });
 
       const data = await res.json();

@@ -2,7 +2,20 @@ import { NextResponse } from "next/server";
 import { buildCoachSystemPrompt } from "@/lib/coach-context";
 import { getServerWhoopMetrics } from "@/lib/whoop/client";
 import { pickTodayMetrics } from "@/lib/whoop-data";
-import type { Locale } from "@/lib/i18n/types";
+import { createDefaultJournalEntry, type JournalEntry } from "@/lib/journal";
+import { getAuthUserIdServer, loadUserDataServer } from "@/lib/supabase/db-server";
+import type { Locale } from "@/lib/i18n";
+
+async function loadServerJournal(): Promise<JournalEntry> {
+  const userId = await getAuthUserIdServer();
+  if (!userId) return createDefaultJournalEntry();
+
+  const history = await loadUserDataServer<JournalEntry[]>(userId, "journal");
+  if (!history?.length) return createDefaultJournalEntry();
+
+  const today = new Date().toISOString().split("T")[0];
+  return history.find((e) => e.date === today) ?? createDefaultJournalEntry(today);
+}
 
 export async function POST(req: Request) {
   const apiKey = process.env.DEEPSEEK_API_KEY;
@@ -14,10 +27,11 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { messages, locale, bloodTestContext } = (await req.json()) as {
+    const { messages, locale, bloodTestContext, profileContext } = (await req.json()) as {
       messages: { role: "user" | "assistant"; content: string }[];
       locale?: Locale;
       bloodTestContext?: string | null;
+      profileContext?: string | null;
     };
 
     if (!messages?.length) {
@@ -25,6 +39,7 @@ export async function POST(req: Request) {
     }
 
     const whoop = await getServerWhoopMetrics();
+    const journal = await loadServerJournal();
 
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
@@ -39,9 +54,11 @@ export async function POST(req: Request) {
             role: "system",
             content: buildCoachSystemPrompt(locale ?? "en", {
               bloodTestContext,
+              profileContext,
               metrics: pickTodayMetrics(whoop.metrics),
               dailyMetrics: whoop.metrics,
               whoopConnected: whoop.connected,
+              journal,
             }),
           },
           ...messages,

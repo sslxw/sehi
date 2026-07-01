@@ -3,15 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
+import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navItems } from "@/lib/nav";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { WhoopConnect } from "@/components/WhoopConnect";
+import { SehiLogo } from "@/components/SehiLogo";
 
 export function Sidebar() {
   const pathname = usePathname();
   const { t, isRtl } = useLocale();
+  const { user, logout } = useAuth();
+  const initial = (user?.name ?? "S").charAt(0).toUpperCase();
 
   return (
     <aside
@@ -21,17 +26,9 @@ export function Sidebar() {
       )}
     >
       <div className="p-6 pb-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/25 to-violet-500/25 border border-white/10 flex items-center justify-center">
-              <span className="text-sm font-bold gradient-text">S</span>
-            </div>
-            <div>
-              <p className="text-sm font-semibold tracking-tight">{t("brand.name")}</p>
-              <p className="text-[10px] text-zinc-500 uppercase tracking-wider">{t("brand.tagline")}</p>
-            </div>
-          </div>
-        </div>
+        <Link href="/" className="block">
+          <SehiLogo size="md" showWordmark tagline={t("brand.tagline")} />
+        </Link>
         <div className="mt-4">
           <LanguageSwitcher className="w-full justify-center" />
         </div>
@@ -72,12 +69,20 @@ export function Sidebar() {
         <WhoopConnect className="mb-3" />
         <div className="flex items-center gap-3 px-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400/20 to-violet-400/20 border border-white/10 flex items-center justify-center">
-            <span className="text-xs font-semibold text-cyan-300">S</span>
+            <span className="text-xs font-semibold text-cyan-300">{initial}</span>
           </div>
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-zinc-300 truncate">Sal</p>
-            <p className="text-[10px] text-zinc-500">{t("brand.member")}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium text-zinc-300 truncate">{user?.name ?? t("brand.member")}</p>
+            <p className="text-[10px] text-zinc-500 truncate">{user?.email ?? t("brand.member")}</p>
           </div>
+          <button
+            type="button"
+            onClick={() => logout()}
+            title={t("auth.logout")}
+            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] transition-colors shrink-0"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </aside>

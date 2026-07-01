@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
 import { WhoopProvider } from "@/components/providers/WhoopProvider";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 
 const geist = Geist({
   variable: "--font-geist-sans",
@@ -37,11 +38,13 @@ export default function RootLayout({
   return (
     <html lang="en" dir="ltr" className={`${geist.variable} ${notoArabic.variable} h-full`} suppressHydrationWarning>
       <body className="min-h-full antialiased font-sans">
-        <LocaleProvider>
-          <WhoopProvider>
-            <AppShell>{children}</AppShell>
-          </WhoopProvider>
-        </LocaleProvider>
+        <AuthProvider>
+          <LocaleProvider>
+            <WhoopProvider>
+              <AppShell>{children}</AppShell>
+            </WhoopProvider>
+          </LocaleProvider>
+        </AuthProvider>
       </body>
     </html>
   );

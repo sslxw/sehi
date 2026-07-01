@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Header } from "@/components/Header";
 import { SehiScoreRing, SehiScoreBreakdown } from "@/components/SehiScoreRing";
@@ -13,7 +14,7 @@ import {
   pickYesterdayMetrics,
   generateInsights,
 } from "@/lib/whoop-data";
-import { getTodayJournal } from "@/lib/journal";
+import { getTodayJournalAsync, createDefaultJournalEntry, type JournalEntry } from "@/lib/journal";
 import { calculateSehiScore } from "@/lib/sehi-score";
 import {
   generateEnergyTimeline,
@@ -24,12 +25,19 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { useWhoop } from "@/components/providers/WhoopProvider";
+import { DailyChecklist } from "@/components/home/DailyChecklist";
 import { getGreetingKey, getScoreLabelKey, getSehiRecommendKey } from "@/lib/i18n";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 export default function HomePage() {
   const { t } = useLocale();
+  const { user } = useAuth();
   const { today, yesterday, dailyMetrics, connected, configured, connect } = useWhoop();
-  const journal = getTodayJournal();
+  const [journal, setJournal] = useState<JournalEntry>(createDefaultJournalEntry());
+
+  useEffect(() => {
+    getTodayJournalAsync(user?.userId).then(setJournal);
+  }, [user?.userId]);
   const sehi = calculateSehiScore(today, journal);
   const timeline = generateEnergyTimeline(today, journal);
   const trainingWindow = getTrainingWindow(today, timeline);
@@ -78,6 +86,7 @@ export default function HomePage() {
           </div>
 
           <div className="lg:col-span-8 space-y-6 mt-6 lg:mt-0">
+            <DailyChecklist />
             <EnergyTimeline timeline={timeline} trainingWindow={trainingWindow} />
             <p className="text-xs text-zinc-500 -mt-4 px-1">{recommendation}</p>
 

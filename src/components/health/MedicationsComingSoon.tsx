@@ -1,11 +1,21 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Bell, Clock, Pill, ShieldAlert } from "lucide-react";
+import { loadMedicationsAsync } from "@/lib/medications";
+import type { MedicationEntry } from "@/lib/user-profile";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { useLocale } from "@/components/providers/LocaleProvider";
 
 export function MedicationsComingSoon() {
   const { t } = useLocale();
+  const { user } = useAuth();
+  const [medications, setMedications] = useState<MedicationEntry[]>([]);
+
+  useEffect(() => {
+    loadMedicationsAsync(user?.userId).then(setMedications);
+  }, [user?.userId]);
 
   const features = [
     { icon: Pill, label: t("health.medFeatureTrack") },
@@ -32,14 +42,32 @@ export function MedicationsComingSoon() {
             <p className="text-xs text-zinc-500 mt-0.5">{t("health.medicationsSubtitle")}</p>
           </div>
         </div>
-        <span className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/25 shrink-0">
-          {t("common.comingSoon")}
-        </span>
+        {medications.length === 0 && (
+          <span className="text-[10px] font-semibold uppercase tracking-wider px-2.5 py-1 rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/25 shrink-0">
+            {t("common.comingSoon")}
+          </span>
+        )}
       </div>
 
-      <p className="relative text-sm text-zinc-400 leading-relaxed mb-4">
-        {t("health.medicationsDesc")}
-      </p>
+      {medications.length > 0 ? (
+        <ul className="relative space-y-2 mb-4">
+          {medications.map((med) => (
+            <li
+              key={med.name}
+              className="flex items-center justify-between bg-white/[0.03] rounded-xl px-3 py-2.5 border border-white/[0.04]"
+            >
+              <span className="text-sm text-zinc-200">{med.name}</span>
+              <span className="text-xs text-zinc-500">
+                {[med.dosage, med.frequency].filter(Boolean).join(" · ") || "—"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="relative text-sm text-zinc-400 leading-relaxed mb-4">
+          {t("health.medicationsDesc")}
+        </p>
+      )}
 
       <div className="relative grid grid-cols-2 gap-2">
         {features.map(({ icon: Icon, label }) => (

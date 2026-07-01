@@ -1,5 +1,11 @@
 import { cookies } from "next/headers";
 import type { WhoopTokens } from "./types";
+import {
+  getAuthUserIdServer,
+  loadUserDataServer,
+  saveUserDataServer,
+} from "@/lib/supabase/db-server";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 const COOKIE_NAME = "sehi_whoop_tokens";
 
@@ -16,6 +22,14 @@ function decodeTokens(raw: string): WhoopTokens | null {
 }
 
 export async function loadWhoopTokens(): Promise<WhoopTokens | null> {
+  if (isSupabaseConfigured()) {
+    const userId = await getAuthUserIdServer();
+    if (userId) {
+      const dbTokens = await loadUserDataServer<WhoopTokens>(userId, "whoop_tokens");
+      if (dbTokens?.refresh_token) return dbTokens;
+    }
+  }
+
   const store = await cookies();
   const raw = store.get(COOKIE_NAME)?.value;
   if (!raw) return null;
@@ -23,6 +37,13 @@ export async function loadWhoopTokens(): Promise<WhoopTokens | null> {
 }
 
 export async function saveWhoopTokens(tokens: WhoopTokens): Promise<void> {
+  if (isSupabaseConfigured()) {
+    const userId = await getAuthUserIdServer();
+    if (userId) {
+      await saveUserDataServer(userId, "whoop_tokens", tokens);
+    }
+  }
+
   const store = await cookies();
   store.set(COOKIE_NAME, encodeTokens(tokens), {
     httpOnly: true,
@@ -34,6 +55,13 @@ export async function saveWhoopTokens(tokens: WhoopTokens): Promise<void> {
 }
 
 export async function clearWhoopTokens(): Promise<void> {
+  if (isSupabaseConfigured()) {
+    const userId = await getAuthUserIdServer();
+    if (userId) {
+      await saveUserDataServer(userId, "whoop_tokens", {} as WhoopTokens);
+    }
+  }
+
   const store = await cookies();
   store.delete(COOKIE_NAME);
 }

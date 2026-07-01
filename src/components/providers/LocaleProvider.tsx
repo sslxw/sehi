@@ -12,10 +12,12 @@ import {
   createTranslator,
   defaultLocale,
   getDir,
-  LOCALE_STORAGE_KEY,
   type Locale,
   type TranslateParams,
 } from "@/lib/i18n";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { fetchProfile, upsertProfile } from "@/lib/supabase/db";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 interface LocaleContextValue {
   locale: Locale;
@@ -28,23 +30,36 @@ interface LocaleContextValue {
 const LocaleContext = createContext<LocaleContextValue | null>(null);
 
 export function LocaleProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [locale, setLocaleState] = useState<Locale>(defaultLocale);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem(LOCALE_STORAGE_KEY) as Locale | null;
-    if (stored === "en" || stored === "ar-SA") {
-      setLocaleState(stored);
+    if (!isSupabaseConfigured() || !user?.userId) {
+      setMounted(true);
+      return;
     }
-    setMounted(true);
-  }, []);
 
-  const setLocale = useCallback((next: Locale) => {
-    setLocaleState(next);
-    localStorage.setItem(LOCALE_STORAGE_KEY, next);
-    document.documentElement.lang = next === "ar-SA" ? "ar" : "en";
-    document.documentElement.dir = getDir(next);
-  }, []);
+    fetchProfile(user.userId).then((row) => {
+      const stored = row?.locale;
+      if (stored === "en" || stored === "ar-SA") {
+        setLocaleState(stored);
+      }
+      setMounted(true);
+    });
+  }, [user?.userId]);
+
+  const setLocale = useCallback(
+    (next: Locale) => {
+      setLocaleState(next);
+      document.documentElement.lang = next === "ar-SA" ? "ar" : "en";
+      document.documentElement.dir = getDir(next);
+      if (user?.userId && isSupabaseConfigured()) {
+        void upsertProfile(user.userId, { locale: next });
+      }
+    },
+    [user?.userId]
+  );
 
   useEffect(() => {
     if (!mounted) return;
